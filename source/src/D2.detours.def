@@ -1,0 +1,4 @@
+;LIBRARY      D2CMP.detours
+
+EXPORTS
+    DetourFinishHelperProcess @1 NONAME
