@@ -10,3 +10,33 @@ typedef bool (*DetoursDllPatchFunction)(void* userContext, HMODULE hModule);
 /// Automatically patch an existing dll or once it is loaded
 void DetoursRegisterDllPatch(const wchar_t* dllName, DetoursDllPatchFunction patchFunction, void* userContext);
 
+/// See GetHookOrdinalInfo
+template<class FuncType>
+struct DllOrdinalHookInfo
+{
+    int       ordinal;
+    FuncType  hookFunction;
+    FuncType& realFunction;
+};
+
+/// Helper so that you don't need to repeat functions prototypes and store the pointers yourself
+/// Usage: Call GetHookOrdinalInfo<ordinal>(detourFunction) to receive the detour information
+template<int ordinal, class T>
+inline DllOrdinalHookInfo<T> GetHookOrdinalInfo(T func)
+{
+    static T realFunctionPtr = nullptr;
+    return {ordinal, func, realFunctionPtr};
+}
+
+/// A typeless version of DllOrdinalHookInfo to be used with GetHookOrdinalInfo if you want to build a container of hooks
+struct DllOrdinalHookTypeless
+{
+    template<class FuncType>
+    DllOrdinalHookTypeless(const DllOrdinalHookInfo<FuncType>& info)
+        : ordinal(info.ordinal), hookFunction((PVOID)info.hookFunction), realFunction((PVOID&)info.realFunction)
+    {
+    }
+    int    ordinal;
+    PVOID  hookFunction;
+    PVOID& realFunction;
+};
