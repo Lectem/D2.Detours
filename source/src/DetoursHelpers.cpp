@@ -1,9 +1,9 @@
 #include "DetoursHelpers.h"
 
 #include <Windows.h>
+#include <detours.h>
 #include <fmt/format.h>
 #include <shlwapi.h>
-#include <detours.h>
 #include <vector>
 
 #define LOG_PREFIX "(DetoursHelpers):"
@@ -23,22 +23,20 @@ void DetoursRegisterDllPatch(const wchar_t* dllName, DetoursDllPatchFunction pat
 {
     dllPatches.push_back(DllPatch{dllName, patchFunction, userContext});
     HMODULE hCurrentModule = nullptr;
-    
+
     wchar_t moduleFileName[MAX_PATH];
-    while(nullptr != (hCurrentModule = DetourEnumerateModules(hCurrentModule)))
+    while (nullptr != (hCurrentModule = DetourEnumerateModules(hCurrentModule)))
     {
-        WCHAR szName[MAX_PATH] = {0};
-        const DWORD nRetSize = GetModuleFileNameW(hCurrentModule, szName, MAX_PATH);
+        WCHAR       szName[MAX_PATH] = {0};
+        const DWORD nRetSize         = GetModuleFileNameW(hCurrentModule, szName, MAX_PATH);
         if (nRetSize == 0 || nRetSize == MAX_PATH)
-        { 
-            LOGW(L"Error occured while getting module {} name", (void*)hCurrentModule); 
+        {
+            LOGW(L"Error occured while getting module {} name", (void*)hCurrentModule);
             continue;
         }
         PathStripPathW(moduleFileName);
-        if (0 != _wcsicmp(moduleFileName, dllName))
-            continue;
-        if (!patchFunction(userContext, hCurrentModule))
-            LOGW(L"Failed to patch {}", szName);
+        if (0 != _wcsicmp(moduleFileName, dllName)) continue;
+        if (!patchFunction(userContext, hCurrentModule)) LOGW(L"Failed to patch {}", szName);
     }
 }
 
@@ -58,7 +56,8 @@ HMODULE LoadLibraryPatcher(LPCWSTR lpLibFileName, const CallLoadLibrary& callLoa
             {
                 if (0 == _wcsicmp(fileName, patch.libraryName))
                 {
-                    if (!patch.patchFunction(patch.userContext, hModule)) { LOGW(L"Failed to patch {}", patch.libraryName); }
+                    if (!patch.patchFunction(patch.userContext, hModule))
+                    { LOGW(L"Failed to patch {}", patch.libraryName); }
                 }
             }
         }

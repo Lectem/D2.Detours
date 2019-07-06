@@ -9,14 +9,14 @@
 struct PL2File;
 static PL2File* __stdcall DetouredCreateD2Palette(BYTE* pPal[256])
 {
-    LOG("CreateD2Palette({})\n", PVOID(pPal) );
+    LOG("CreateD2Palette({})\n", PVOID(pPal));
     return GetHookOrdinalInfo<10000>(DetouredCreateD2Palette).realFunction(pPal);
 }
 
-BYTE __stdcall DetouredD2GetNearestPaletteIndex(BYTE* pPalette, int nPaletteSize, int nRed, int nGreen, int nBlue) 
+BYTE __stdcall DetouredD2GetNearestPaletteIndex(BYTE* pPalette, int nPaletteSize, int nRed, int nGreen, int nBlue)
 {
     return GetHookOrdinalInfo<10004>(DetouredD2GetNearestPaletteIndex)
-		.realFunction(pPalette,nPaletteSize,nRed,nGreen,nBlue);
+        .realFunction(pPalette, nPaletteSize, nRed, nGreen, nBlue);
 }
 
 BYTE __stdcall DetouredD2GetFarthestPaletteIndex(BYTE* pPalette, int nPaletteSize, int nRed, int nGreen, int nBlue)

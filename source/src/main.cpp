@@ -1,7 +1,7 @@
 #include <Windows.h>
+#include <detours.h>
 #include <fmt/format.h>
 #include <shlwapi.h>
-#include <detours.h>
 #include "DetoursHelpers.h"
 
 #include "D2CMP.detours.h"
@@ -32,8 +32,8 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         if (!DetoursAttachLoadLibraryFunctions()) LOG(" Failed to attach LoadLibrary*\n");
-		
-		DetoursRegisterDllPatch(L"D2CMP.dll", patchD2CMP, nullptr);
+
+        DetoursRegisterDllPatch(L"D2CMP.dll", patchD2CMP, nullptr);
         DetoursRegisterDllPatch(L"D2Client.dll", patchD2Client, nullptr);
 
         if (LONG error = DetourTransactionCommit() == NO_ERROR)
