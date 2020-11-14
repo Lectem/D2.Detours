@@ -50,7 +50,11 @@ bool patchD2CMP(void*, HMODULE hModule)
     {
         dllOrdinalHook.realFunction = GetProcAddress(hModule, (LPCSTR)dllOrdinalHook.ordinal);
         assert(dllOrdinalHook.realFunction);
-        DetourAttach(&dllOrdinalHook.realFunction, dllOrdinalHook.hookFunction);
+        if (NO_ERROR != DetourAttach(&dllOrdinalHook.realFunction, dllOrdinalHook.hookFunction))
+        {
+            LOGW(L"Failed to patch ordinal {} with {}\n", dllOrdinalHook.ordinal, dllOrdinalHook.hookFunction);
+            exit(-1);
+        }
     }
 
     return NO_ERROR == DetourTransactionCommit();

@@ -32,14 +32,33 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         if (!DetoursAttachLoadLibraryFunctions()) LOG(" Failed to attach LoadLibrary*\n");
+        if (NO_ERROR == DetourTransactionBegin())
+        {
+            DetourUpdateThread(GetCurrentThread());
+            if (!DetoursAttachLoadLibraryFunctions()) LOG(" Failed to attach LoadLibrary*\n");
+            if (!DetoursAttachLoadLibraryFunctions())
+            {
+                LOG(" Failed to attach LoadLibrary*\n");
+                return FALSE;
+            }
 
         DetoursRegisterDllPatch(L"D2CMP.dll", patchD2CMP, nullptr);
         DetoursRegisterDllPatch(L"D2Client.dll", patchD2Client, nullptr);
+            DetoursRegisterDllPatch(L"D2CMP.dll", patchD2CMP, nullptr);
+            DetoursRegisterDllPatch(L"D2Client.dll", patchD2Client, nullptr);
 
         if (LONG error = DetourTransactionCommit() == NO_ERROR)
             LOG(" Detoured SleepEx().\n");
         else
             LOG(" Error detouring SleepEx(): {}\n", error);
+            if (LONG error = DetourTransactionCommit() == NO_ERROR)
+                LOG(" Detoured SleepEx().\n");
+            else
+            {
+                LOG(" Error detouring SleepEx(): {}\n", error);
+                return FALSE;
+            }
+        }
     }
     else if (dwReason == DLL_PROCESS_DETACH)
     {
@@ -48,6 +67,12 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
         if (!DetoursDetachLoadLibraryFunctions()) LOG(" Failed to detach LoadLibrary*\n");
         LONG error = DetourTransactionCommit();
 
+        if (NO_ERROR == DetourTransactionBegin())
+        {
+            DetourUpdateThread(GetCurrentThread());
+            if (!DetoursDetachLoadLibraryFunctions()) LOG(" Failed to detach LoadLibrary*\n");
+            LONG error = DetourTransactionCommit();
+        }
         LOG(" Exiting D2 detours\n");
     }
     return TRUE;
