@@ -9,6 +9,7 @@ set(D2_detours_SOURCES
     # The patches
     src/D2CMP.detours.cpp
     src/D2Client.detours.cpp
+    src/D2Common.detours.cpp
 )
 
 set(D2_detours_HEADERS
@@ -17,6 +18,7 @@ set(D2_detours_HEADERS
     include/DetoursPatch.h
     include/D2CMP.detours.h
     include/D2Client.detours.h
+    include/D2Common.detours.h
 )
 
 add_library(D2.detours 
