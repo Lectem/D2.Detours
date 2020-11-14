@@ -3,6 +3,7 @@ project(D2.detours)
 set(D2_detours_SOURCES
     src/main.cpp
     src/DetoursHelpers.cpp
+    src/DetoursPatch.cpp
     # .def file for the dll exports
     src/D2.detours.def
     # The patches
@@ -13,6 +14,7 @@ set(D2_detours_SOURCES
 set(D2_detours_HEADERS
     include/Log.h
     include/DetoursHelpers.h
+    include/DetoursPatch.h
     include/D2CMP.detours.h
     include/D2Client.detours.h
 )
@@ -32,6 +34,8 @@ target_link_libraries(D2.detours
 
 target_compile_definitions(D2.detours
     PRIVATE
+        # This define is used to differentiate between the detours DLL and other header consumers such as patches
+        -DDETOURS_PATCH_PRIVATE
         # Targetting windows 7 for now
         -DNTDDI_VERSION=NTDDI_WIN7
         -D_WIN32_WINNT=_WIN32_WINNT_WIN7 
