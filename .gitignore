@@ -26,7 +26,6 @@ Testing/
 *.pch
 
 # Libraries
-*.lib
 *.a
 *.la
 *.lo
@@ -38,7 +37,6 @@ Testing/
 *.dylib
 
 # Executables
-*.exe
 *.out
 *.app
 *.i*86
