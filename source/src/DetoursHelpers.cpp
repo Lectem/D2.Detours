@@ -76,10 +76,10 @@ HMODULE LoadLibraryPatcher(LPCSTR lpLibFileName, const CallLoadLibrary& callLoad
     return LoadLibraryPatcher(libFileNameW, callLoadLibrary);
 }
 
-static HMODULE(WINAPI* TrueLoadLibraryA)(LPCSTR lpLibFileName)                                 = LoadLibraryA;
-static HMODULE(WINAPI* TrueLoadLibraryW)(LPCWSTR lpLibFileName)                                = LoadLibraryW;
-static HMODULE(WINAPI* TrueLoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)  = LoadLibraryExA;
-static HMODULE(WINAPI* TrueLoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags) = LoadLibraryExW;
+HMODULE(WINAPI* TrueLoadLibraryW)(LPCWSTR lpLibFileName)                                = LoadLibraryW;
+HMODULE(WINAPI* TrueLoadLibraryA)(LPCSTR lpLibFileName)                                 = LoadLibraryA;
+HMODULE(WINAPI* TrueLoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)  = LoadLibraryExA;
+HMODULE(WINAPI* TrueLoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags) = LoadLibraryExW;
 
 _Ret_maybenull_ HMODULE WINAPI DetouredLoadLibraryA(_In_ LPCSTR lpLibFileName)
 {

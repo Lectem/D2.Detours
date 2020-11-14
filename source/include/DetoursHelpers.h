@@ -40,3 +40,9 @@ struct DllOrdinalHookTypeless
     PVOID  hookFunction;
     PVOID& realFunction;
 };
+
+// Use this to avoid recurive calls.
+extern HMODULE(WINAPI* TrueLoadLibraryW)(LPCWSTR lpLibFileName);
+extern HMODULE(WINAPI* TrueLoadLibraryA)(LPCSTR lpLibFileName);
+extern HMODULE(WINAPI* TrueLoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+extern HMODULE(WINAPI* TrueLoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
