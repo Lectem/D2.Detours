@@ -11,9 +11,11 @@
 
 struct DllPatch
 {
-    const wchar_t*          libraryName   = nullptr;
-    DetoursDllPatchFunction patchFunction = nullptr;
-    void*                   userContext   = nullptr;
+    const wchar_t*          libraryName    = nullptr;
+    DetoursDllPatchFunction patchFunction  = nullptr;
+    void*                   userContext    = nullptr;
+    // We need to prevent double patching to avoid infinite recursions
+    bool                    alreadyPatched = false;
     // TODO : detach mechanism ?
 };
 
@@ -52,12 +54,13 @@ HMODULE LoadLibraryPatcher(LPCWSTR lpLibFileName, const CallLoadLibrary& callLoa
         if (lstrcpynW(fileName, lpLibFileName, _countof(fileName)))
         {
             PathStripPathW(fileName);
-            for (const DllPatch& patch : dllPatches)
+            for (DllPatch& patch : dllPatches)
             {
-                if (0 == _wcsicmp(fileName, patch.libraryName))
+                if (!patch.alreadyPatched && 0 == _wcsicmp(fileName, patch.libraryName))
                 {
                     if (!patch.patchFunction(patch.userContext, hModule))
-                    { LOGW(L"Failed to patch {}", patch.libraryName); }
+                        LOGW(L"Failed to patch {}", patch.libraryName); 
+                    patch.alreadyPatched = true;
                 }
             }
         }
