@@ -9,8 +9,8 @@
 struct PL2File;
 static PL2File* __stdcall DetouredCreateD2Palette(BYTE* pPal[256])
 {
-    LOG("CreateD2Palette({})\n", PVOID(pPal));
-    return GetHookOrdinalInfo<10000>(DetouredCreateD2Palette).realFunction(pPal);
+    return GetHookOrdinalInfo<10000>(DetouredCreateD2Palette)
+        .realFunction(pPal);
 }
 
 BYTE __stdcall DetouredD2GetNearestPaletteIndex(BYTE* pPalette, int nPaletteSize, int nRed, int nGreen, int nBlue)
@@ -29,7 +29,6 @@ struct TileHeader;
 static int __stdcall DetouredD2GetTileFlagsType(TileHeader* hTile)
 {
     int flag = GetHookOrdinalInfo<10079>(DetouredD2GetTileFlagsType).realFunction(hTile);
-    LOG("D2GetTileFlagsType->{}\n", flag);
     return flag;
 }
 
