@@ -30,8 +30,10 @@ target_include_directories(D2.detours PRIVATE include)
 target_link_libraries(D2.detours
     PRIVATE
         fmt::fmt
-        Shlwapi.lib
         Detours::Detours
+        # Required for some of the Windows libs we use
+        Shlwapi.lib
+        PathCch.lib
 )
 
 target_compile_definitions(D2.detours

@@ -1,5 +1,6 @@
 
 #include <Windows.h>
+#include <PathCch.h>
 #include <detours.h>
 #include <DetoursPatch.h>
 
@@ -16,10 +17,20 @@ bool patchD2Common(void*, HMODULE hModule)
 
     DetourUpdateThread(GetCurrentThread());
     
-    const wchar_t* patchDllName = LR"(.\patch\D2Common.dll)";
-    
-    const bool patchSucceeded = DetoursPatchModule(hModule, patchDllName);
-    
+    const size_t maxEnvPathLen = 32'767; // From the win32 docs
+    wchar_t* envPath = (wchar_t*)malloc(maxEnvPathLen * sizeof(*envPath));
+    const wchar_t* patchFolder = (0 != GetEnvironmentVariableW(L"DIABLO2_PATCH", envPath, maxEnvPathLen)) ? envPath : LR"(.\patch\)";
+    const wchar_t* patchDllName = LR"(D2Common.dll)";
+
+    wchar_t* finalPatchPath = nullptr;
+    bool patchSucceeded = false;
+    if (S_OK == PathAllocCombine(patchFolder, patchDllName, PATHCCH_ALLOW_LONG_PATHS, &finalPatchPath))
+        patchSucceeded = DetoursPatchModule(hModule, finalPatchPath);
+
+    LocalFree(finalPatchPath);
+    free(envPath);
+
+
     if (NO_ERROR != DetourTransactionCommit())
         return false;
 
