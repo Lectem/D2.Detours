@@ -9,9 +9,9 @@ enum class PatchAction {
 };
 
 extern "C" {
-	typedef int (__stdcall *GetBaseOrdinalType)();
-	typedef int (__stdcall*GetLastOrdinalType)();
-	typedef PatchAction (__stdcall *GetPatchActionType)(int ordinal);
+	typedef int (__cdecl *GetBaseOrdinalType)();
+	typedef int (__cdecl *GetLastOrdinalType)();
+	typedef PatchAction (__cdecl *GetPatchActionType)(int ordinal);
 }
 
 struct PatchInformationFunctions
