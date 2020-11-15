@@ -6,17 +6,21 @@ A small project to help hooking Diablo2 .dlls
 
 This project is using [Detours](https://github.com/microsoft/Detours) to patch functions.
 
+It is also using [fmt](https://github.com/fmtlib/fmt) (as a git submodule, clone this repository recursively or use `git submodule update --init` after clone).
+
 Start by building D2.detours.dll using CMake.
 
-```
+```sh
 cmake -A Win32 -B build
-cmake --build build
+# Pick one, both or another config
+cmake --build build --config Debug
+cmake --build build --config Release
 ```
 
 Then use the pre-built `external/Detours/bin.X86/with-dll.exe` executable to inject the detours dll.
 For example if you are using D2SE mod manager:
 
-```
+```sh
 with-dll.exe -d:D2.detours.dll D2SE.exe
 ```
 
