@@ -24,7 +24,7 @@ For example if you are using D2SE mod manager:
 with-dll.exe -d:D2.detours.dll D2SE.exe
 ```
 
-Note that it will spawn D2SE.exe as a subprocess, so you might be interested in the following Visual Studio extension [Microsoft Child Process Debugging Power Tool](https://marketplace.visualstudio.com/items?itemName=vsdbgplat.MicrosoftChildProcessDebuggingPowerTool).
+Note that it will spawn D2SE.exe as a subprocess, so you might be interested in the following Visual Studio extension [Microsoft Child Process Debugging Power Tool](https://marketplace.visualstudio.com/items?itemName=vsdbgplat.MicrosoftChildProcessDebuggingPowerTool). Then go to `Debug > Other debug targets > Child process debugging settings`, enable & save.
 
 In case where it fails to start with the message `withdll.exe: DetourCreateProcessWithDllEx failed: 740`, try running it with admin privileges.
 
