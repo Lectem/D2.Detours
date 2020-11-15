@@ -65,7 +65,6 @@ bool DetoursPatchModule(HMODULE hOriginalModule, const wchar_t* patchDllName)
             }
             else {
                 LOGW(L"Ordinal skipped due to missing function\n");
-                return false;
             }
         }
     }
