@@ -5,10 +5,10 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 endif()
 
 # Put the project early since modules might need to detect the compiler
-project("D2.detours" C CXX)
+project("D2.detours" LANGUAGES C CXX VERSION 1.0.0)
 
 if(NOT ${CMAKE_SIZEOF_VOID_P} EQUAL 4)
-    message(FATAL_ERROR "Diablo2 is 32bits only")
+    message(FATAL_ERROR "Diablo2 is 32bits only. Invoke CMake with '-A Win32'")
 endif()
 
 # Standard CMake modules
@@ -33,10 +33,17 @@ add_subdirectory(source)
 ## Packaging ##
 ###############
 
-install(TARGETS D2.detours)
-install(FILES LICENSE DESTINATION / RENAME LICENSE.md)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    include(GNUInstallDirs)
+    install(TARGETS D2.detours)
+    install(FILES README.md TYPE DOC)
+    install(FILES LICENSE  TYPE DOC RENAME LICENSE.md)
 
-install(DIRECTORY external/Detours/bin.X86/ TYPE BIN)
-install(FILES external/Detours/LICENSE.md DESTINATION / RENAME Detours.LICENSE.md)
+    install(DIRECTORY external/Detours/bin.X86/ TYPE BIN)
+    install(FILES external/Detours/LICENSE.md TYPE DOC RENAME Detours.LICENSE.md)
 
+    set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/README.md)
+    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/LICENSE)
+    include(CPack)
+endif()
 
