@@ -24,6 +24,10 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Debug Action
+      uses: hmarr/debug-action@v1.0.0
+      
+      
     - name: CMake configure and build
       run: |
         cmake -B build -A Win32
