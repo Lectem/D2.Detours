@@ -6,6 +6,8 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  release:
+    types: [published]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -28,11 +30,17 @@ jobs:
         cmake --build build --config ${{env.BUILD_TYPE}}
 
     - name: Install
-      run: cmake --install build --prefix install
+      run: cmake --install build --prefix D2.Detours-Win32
 
     - name: Artifact
       uses: actions/upload-artifact@v2.2.1
       with:
-        path: install/*
+        path: D2.Detours-Win32/*
 
-
+    - name: Upload release
+      if: github.event == 'release' && success()
+      uses: alexellis/upload-assets@0.2.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        asset_paths: '[ "D2.Detours-Win32/*" ]'
