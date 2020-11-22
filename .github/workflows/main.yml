@@ -23,13 +23,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
-    - name: Debug environment
-      run: |
-        echo "github.event=${{github.event}}"
-        echo "github.event.type=${{github.event.type}}"
-        echo "Environment variables:"
-        set
-      
+
     - name: CMake configure and build
       run: |
         cmake -B build -A Win32
@@ -44,7 +38,7 @@ jobs:
         path: D2.Detours-Win32/*
 
     - name: Upload release
-      if: github.event.type == 'release' && success()
+      if: github.event_name == 'release' && success()
       uses: alexellis/upload-assets@0.2.2
       env:
         GITHUB_TOKEN: ${{ github.token }}
