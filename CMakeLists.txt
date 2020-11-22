@@ -27,3 +27,16 @@ add_subdirectory(external EXCLUDE_FROM_ALL)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory(source)
+
+
+###############
+## Packaging ##
+###############
+
+install(TARGETS D2.detours)
+install(FILES LICENSE DESTINATION / RENAME LICENSE.md)
+
+install(DIRECTORY external/Detours/bin.X86/ TYPE BIN)
+install(FILES external/Detours/LICENSE.md DESTINATION / RENAME Detours.LICENSE.md)
+
+
