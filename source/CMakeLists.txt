@@ -25,7 +25,7 @@ add_library(D2.detours
     SHARED # We want to create a detours dll
     ${D2_detours_SOURCES} ${D2_detours_HEADERS}
 )
-target_include_directories(D2.detours PRIVATE include)
+target_include_directories(D2.detours PUBLIC include)
 
 target_link_libraries(D2.detours
     PRIVATE
