@@ -8,7 +8,7 @@
 #include "D2Client.detours.h"
 #include "D2Common.detours.h"
 
-#define LOG_PREFIX "(D2.detours.dll):"
+#define LOG_PREFIX "(D2.Detours.dll):"
 #include "Log.h"
 
 BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)

@@ -1,11 +1,11 @@
-project(D2.detours)
+project(D2.Detours)
 
 set(D2_detours_SOURCES
-    src/main.cpp
+    src/DetoursDllMain.cpp
     src/DetoursHelpers.cpp
     src/DetoursPatch.cpp
     # .def file for the dll exports
-    src/D2.detours.def
+    src/D2.Detours.def
     # The patches
     src/D2CMP.detours.cpp
     src/D2Client.detours.cpp
@@ -21,13 +21,13 @@ set(D2_detours_HEADERS
     include/D2Common.detours.h
 )
 
-add_library(D2.detours 
+add_library(D2.Detours 
     SHARED # We want to create a detours dll
     ${D2_detours_SOURCES} ${D2_detours_HEADERS}
 )
-target_include_directories(D2.detours PUBLIC include)
+target_include_directories(D2.Detours PUBLIC include)
 
-target_link_libraries(D2.detours
+target_link_libraries(D2.Detours
     PRIVATE
         fmt::fmt
         Detours::Detours
@@ -36,7 +36,7 @@ target_link_libraries(D2.detours
         PathCch.lib
 )
 
-target_compile_definitions(D2.detours
+target_compile_definitions(D2.Detours
     PRIVATE
         # This define is used to differentiate between the detours DLL and other header consumers such as patches
         -DDETOURS_PATCH_PRIVATE
@@ -50,6 +50,15 @@ target_compile_definitions(D2.detours
         -DNOMINMAX
 )
 
+add_executable(D2.DetoursLauncher src/DetoursLauncher.cpp)
 
+target_include_directories(D2.DetoursLauncher PRIVATE include)
 
+target_link_libraries(D2.DetoursLauncher
+    PRIVATE
+        fmt::fmt
+        Detours::Detours
+        PathCch.lib
+)
 
+add_dependencies(D2.DetoursLauncher D2.Detours)

@@ -33,12 +33,12 @@ void DetoursRegisterDllPatch(const wchar_t* dllName, DetoursDllPatchFunction pat
         const DWORD nRetSize         = GetModuleFileNameW(hCurrentModule, szName, MAX_PATH);
         if (nRetSize == 0 || nRetSize == MAX_PATH)
         {
-            LOGW(L"Error occured while getting module {} name", (void*)hCurrentModule);
+            LOGW(L"Error occured while getting module {} name\n", (void*)hCurrentModule);
             continue;
         }
         PathStripPathW(moduleFileName);
         if (0 != _wcsicmp(moduleFileName, dllName)) continue;
-        if (!patchFunction(userContext, hCurrentModule)) LOGW(L"Failed to patch {}", szName);
+        if (!patchFunction(userContext, hCurrentModule)) LOGW(L"Failed to patch {}\n", szName);
     }
 }
 
@@ -59,7 +59,7 @@ HMODULE LoadLibraryPatcher(LPCWSTR lpLibFileName, const CallLoadLibrary& callLoa
                 if (!patch.alreadyPatched && 0 == _wcsicmp(fileName, patch.libraryName))
                 {
                     if (!patch.patchFunction(patch.userContext, hModule))
-                        LOGW(L"Failed to patch {}", patch.libraryName); 
+                        LOGW(L"Failed to patch {}\n", patch.libraryName); 
                     patch.alreadyPatched = true;
                 }
             }
