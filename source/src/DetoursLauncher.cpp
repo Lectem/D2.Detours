@@ -157,7 +157,7 @@ int wmain(int argc, wchar_t* argv[])
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
     const DWORD dwFlags = CREATE_DEFAULT_ERROR_MODE | CREATE_SUSPENDED;
-    if (DetourCreateProcessWithDllExW(appName, commandLine, NULL, NULL, TRUE, dwFlags, NULL, NULL, &si, &pi, dllPathAnsi, NULL))
+    if (DetourCreateProcessWithDllExW(appName, commandLine, NULL, NULL, TRUE, dwFlags, NULL, NULL, &si, &pi, (char*)dllPathAnsi.get(), NULL))
     {
         ResumWaitAndCleanChildProcess(pi);
         return 0;

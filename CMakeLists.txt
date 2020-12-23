@@ -35,7 +35,7 @@ add_subdirectory(source)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     include(GNUInstallDirs)
-    install(TARGETS D2.Detours)
+    install(TARGETS D2.Detours D2.DetoursLauncher)
     install(FILES README.md TYPE DOC)
     install(FILES LICENSE  TYPE DOC RENAME LICENSE.md)
 
