@@ -5,7 +5,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 endif()
 
 # Put the project early since modules might need to detect the compiler
-project("D2.Detours" LANGUAGES C CXX VERSION 1.0.0)
+project("D2.Detours" LANGUAGES C CXX VERSION 1.1.0)
 
 if(NOT ${CMAKE_SIZEOF_VOID_P} EQUAL 4)
     message(FATAL_ERROR "Diablo2 is 32bits only. Invoke CMake with '-A Win32'")
