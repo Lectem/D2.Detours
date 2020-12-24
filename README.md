@@ -2,7 +2,7 @@
 
 A small project to help hooking Diablo2 .dlls
 
-## Usage
+## Building
 
 This project is using [Detours](https://github.com/microsoft/Detours) to patch functions.
 
@@ -18,6 +18,8 @@ cmake --build build --config Release
 # Install
 cmake --install build --config Release --prefix YOUR_INSTALL_FOLDER
 ```
+
+## Usage
 
 Then use `D2.DetoursLauncher` to inject the detours dll into the Diablo II process of your choice.
 For example if you are using D2SE mod manager:

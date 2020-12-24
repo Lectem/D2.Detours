@@ -53,11 +53,10 @@ static std::wstring GetInstallDirectory()
 
 static std::wstring FindD2Executable()
 {
-    std::wstring installDir = GetInstallDirectory();
     const size_t bufferNbChars = 1 << 10;
     wchar_t buffer[bufferNbChars];
 
-    const wchar_t* Diablo2ExeNames[] = { L"D2SE.exe", L"Game.exe" };
+    const wchar_t* Diablo2ExeNames[] = { L"D2SE.exe", L"Game.exe", L"Diablo II.exe" };
     DWORD stringLength = 0;
 
     // First look in current dir and system PATH
@@ -68,6 +67,7 @@ static std::wstring FindD2Executable()
             break;
     }
     // If not found, try the game folder
+    const std::wstring installDir = GetInstallDirectory();
     if (!installDir.empty() && stringLength == 0)
     {
         for (const wchar_t* exeName : Diablo2ExeNames)
