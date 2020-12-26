@@ -93,7 +93,7 @@ static bool IsFile(const wchar_t* szPath)
     return dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-static std::wstring GetD2ExecutablePath(int argc, wchar_t* argv[])
+static std::wstring GetD2ExecutablePath(int argc, wchar_t* argv[], bool& overrideChildCurrentDir)
 {
     if (argc >= 2)
     {
@@ -111,15 +111,26 @@ static std::wstring GetD2ExecutablePath(int argc, wchar_t* argv[])
         {
             USER_ERRORW(L"D2 executable not found, please provide the executable name as 1st parameter of the command line.");
         }
+        overrideChildCurrentDir = true;
         return d2Executable;
     }
+}
+
+ScopedLocalPtr GetDirectory(const std::wstring path)
+{
+    const size_t bufferSizeInBytes = sizeof(wchar_t) * (path.length() + 1);
+    void* directoryPath = memcpy(LocalAlloc(LMEM_FIXED, bufferSizeInBytes), path.data(), bufferSizeInBytes);
+    PathCchRemoveFileSpec(static_cast<wchar_t*>(directoryPath), bufferSizeInBytes);
+    return { directoryPath, ::LocalFree };
 }
 
 int wmain(int argc, wchar_t* argv[])
 {
     ScopedCloseHandle childProcessHandle;
 
-    std::wstring d2ExecPath = GetD2ExecutablePath(argc, argv);
+    bool overrideChildCurrentDir = false;
+    const std::wstring d2ExecPath = GetD2ExecutablePath(argc, argv, overrideChildCurrentDir);
+    const ScopedLocalPtr directoryPathPtr = GetDirectory(d2ExecPath);
     if (d2ExecPath.empty())
     {
         return 1;
@@ -157,7 +168,12 @@ int wmain(int argc, wchar_t* argv[])
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
     const DWORD dwFlags = CREATE_DEFAULT_ERROR_MODE | CREATE_SUSPENDED;
-    if (DetourCreateProcessWithDllExW(appName, commandLine, NULL, NULL, TRUE, dwFlags, NULL, NULL, &si, &pi, (char*)dllPathAnsi.get(), NULL))
+    if (DetourCreateProcessWithDllExW(appName, commandLine,
+        NULL, NULL, 
+        TRUE, dwFlags, 
+        NULL, overrideChildCurrentDir ? static_cast<const wchar_t*>(directoryPathPtr.get()) : nullptr,
+        &si, &pi, (char*)dllPathAnsi.get(), NULL
+        ))
     {
         ResumWaitAndCleanChildProcess(pi);
         return 0;
