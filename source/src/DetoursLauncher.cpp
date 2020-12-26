@@ -6,19 +6,7 @@
 #define LOG_PREFIX "(D2.DetoursLauncher):"
 #include "Log.h"
 
-struct ScopedCloseHandle {
-    HANDLE hdl = NULL;
-
-    ScopedCloseHandle() = default;
-    ScopedCloseHandle(const ScopedCloseHandle&&) = delete;
-    ~ScopedCloseHandle() {
-        if (hdl != NULL)
-            CloseHandle(hdl);
-    }
-};
-
-
-static void ResumWaitAndCleanChildProcess(const PROCESS_INFORMATION& pi)
+static void ResumeWaitAndCleanChildProcess(const PROCESS_INFORMATION& pi)
 {
     ResumeThread(pi.hThread);
     WaitForSingleObject(pi.hProcess, INFINITE);
@@ -126,8 +114,6 @@ ScopedLocalPtr GetDirectory(const std::wstring path)
 
 int wmain(int argc, wchar_t* argv[])
 {
-    ScopedCloseHandle childProcessHandle;
-
     bool overrideChildCurrentDir = false;
     const std::wstring d2ExecPath = GetD2ExecutablePath(argc, argv, overrideChildCurrentDir);
     const ScopedLocalPtr directoryPathPtr = GetDirectory(d2ExecPath);
@@ -175,7 +161,7 @@ int wmain(int argc, wchar_t* argv[])
         &si, &pi, (char*)dllPathAnsi.get(), NULL
         ))
     {
-        ResumWaitAndCleanChildProcess(pi);
+        ResumeWaitAndCleanChildProcess(pi);
         return 0;
     }
     else if (GetLastError() == ERROR_ELEVATION_REQUIRED)
