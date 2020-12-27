@@ -9,6 +9,17 @@
 #define LOG_PREFIX "(DetoursHelpers):"
 #include "Log.h"
 
+// Uncomment for extensive tracing of LoadLibrary and patching
+// #define TRACE_FOR_DEBUG
+
+#ifdef TRACE_FOR_DEBUG
+#define TRACE LOG
+#define TRACEW LOGW
+#else
+#define TRACE
+#define TRACEW
+#endif
+
 struct DllPatch
 {
     const wchar_t*          libraryName    = nullptr;
@@ -21,11 +32,33 @@ struct DllPatch
 
 static std::vector<DllPatch> dllPatches;
 
+static void PatchDLL(LPCWSTR lpLibFileName, HMODULE hModule)
+{
+    wchar_t fileName[MAX_PATH];
+    if (lstrcpynW(fileName, lpLibFileName, _countof(fileName)))
+    {
+        PathStripPathW(fileName);
+        for (DllPatch& patch : dllPatches)
+        {
+            if (!patch.alreadyPatched && 0 == _wcsicmp(fileName, patch.libraryName))
+            {
+                // Do this to avoid recursion, as GetProcAdress can call LoadLibrary
+                patch.alreadyPatched = true;
+
+                if (!patch.patchFunction(patch.userContext, hModule))
+                    LOGW(L"Failed to patch {}\n", patch.libraryName);
+            }
+        }
+    }
+}
 void DetoursRegisterDllPatch(const wchar_t* dllName, DetoursDllPatchFunction patchFunction, void* userContext)
 {
-    dllPatches.push_back(DllPatch{dllName, patchFunction, userContext});
-    HMODULE hCurrentModule = nullptr;
+    dllPatches.push_back(DllPatch{ dllName, patchFunction, userContext });
+}
 
+void DetoursApplyPatches()
+{
+    HMODULE hCurrentModule = nullptr;
     wchar_t moduleFileName[MAX_PATH];
     while (nullptr != (hCurrentModule = DetourEnumerateModules(hCurrentModule)))
     {
@@ -33,38 +66,23 @@ void DetoursRegisterDllPatch(const wchar_t* dllName, DetoursDllPatchFunction pat
         const DWORD nRetSize         = GetModuleFileNameW(hCurrentModule, szName, MAX_PATH);
         if (nRetSize == 0 || nRetSize == MAX_PATH)
         {
-            LOGW(L"Error occured while getting module {} name\n", (void*)hCurrentModule);
+            TRACEW(L"Error occured while getting module {} name\n", (void*)hCurrentModule);
             continue;
         }
-        PathStripPathW(moduleFileName);
-        if (0 != _wcsicmp(moduleFileName, dllName)) continue;
-        if (!patchFunction(userContext, hCurrentModule)) LOGW(L"Failed to patch {}\n", szName);
+        PatchDLL(szName,hCurrentModule);
     }
 }
+
 
 template<class CallLoadLibrary>
 HMODULE LoadLibraryPatcher(LPCWSTR lpLibFileName, const CallLoadLibrary& callLoadLibrary)
 {
-
-    LOGW(L"LoadLibraryPatcher({}) called!\n", lpLibFileName);
-    HMODULE hModule = callLoadLibrary();
-    if (hModule)
-    {
-        wchar_t fileName[MAX_PATH];
-        if (lstrcpynW(fileName, lpLibFileName, _countof(fileName)))
-        {
-            PathStripPathW(fileName);
-            for (DllPatch& patch : dllPatches)
-            {
-                if (!patch.alreadyPatched && 0 == _wcsicmp(fileName, patch.libraryName))
-                {
-                    if (!patch.patchFunction(patch.userContext, hModule))
-                        LOGW(L"Failed to patch {}\n", patch.libraryName); 
-                    patch.alreadyPatched = true;
-                }
-            }
-        }
-    }
+    const HMODULE hModule = callLoadLibrary();
+    // We are forced to check all dlls for patching as the loader does not call LoadLibrary
+    // and we can't trigger LoadLibrary from its notifications
+    // This could easily be optimized at a later point in time if needed.
+    if(hModule)
+        DetoursApplyPatches();
     return hModule;
 }
 
@@ -83,25 +101,25 @@ HMODULE(WINAPI* TrueLoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD d
 
 _Ret_maybenull_ HMODULE WINAPI DetouredLoadLibraryA(_In_ LPCSTR lpLibFileName)
 {
-    LOG("LoadLibraryA({})\n", lpLibFileName);
+    TRACE("LoadLibraryA({})\n", lpLibFileName);
     return LoadLibraryPatcher(lpLibFileName, [=]() { return TrueLoadLibraryA(lpLibFileName); });
 }
 
 _Ret_maybenull_ HMODULE WINAPI DetouredLoadLibraryW(_In_ LPCWSTR lpLibFileName)
 {
-    LOGW(L"LoadLibraryW({})\n", (wchar_t*)lpLibFileName);
+    TRACEW(L"LoadLibraryW({})\n", (wchar_t*)lpLibFileName);
     return LoadLibraryPatcher(lpLibFileName, [=]() { return TrueLoadLibraryW(lpLibFileName); });
 }
 
 _Ret_maybenull_ HMODULE WINAPI DetouredLoadLibraryExA(_In_ LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 {
-    LOG("LoadLibraryExA({},{},{})\n", lpLibFileName, (void*)hFile, dwFlags);
+    TRACE("LoadLibraryExA({},{},{})\n", lpLibFileName, (void*)hFile, dwFlags);
     return LoadLibraryPatcher(lpLibFileName, [=]() { return TrueLoadLibraryExA(lpLibFileName, hFile, dwFlags); });
 }
 
 _Ret_maybenull_ HMODULE WINAPI DetouredLoadLibraryExW(_In_ LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
 {
-    LOGW(L"LoadLibraryExW({},{},{})\n", (wchar_t*)lpLibFileName, (void*)hFile, dwFlags);
+    TRACEW(L"LoadLibraryExW({},{},{})\n", (wchar_t*)lpLibFileName, (void*)hFile, dwFlags);
     return LoadLibraryPatcher(lpLibFileName, [=]() { return TrueLoadLibraryExW(lpLibFileName, hFile, dwFlags); });
 }
 
@@ -113,6 +131,27 @@ bool DetoursAttachLoadLibraryFunctions()
     success      = success && NO_ERROR == DetourAttach(&(PVOID&)TrueLoadLibraryExA, DetouredLoadLibraryExA);
     success      = success && NO_ERROR == DetourAttach(&(PVOID&)TrueLoadLibraryExW, DetouredLoadLibraryExW);
     return true;
+
+    // Kernel32 uses stubs which call kernelbase for the real implementation
+    // This means that we may be missing some calls, so hook KernelBase directly
+    if (HMODULE kernelbase = LoadLibraryA("KernelBase.dll"))
+    {
+        (PVOID&)TrueLoadLibraryA = GetProcAddress(kernelbase, "LoadLibraryA");
+        (PVOID&)TrueLoadLibraryW = GetProcAddress(kernelbase, "LoadLibraryW");
+        (PVOID&)TrueLoadLibraryExA = GetProcAddress(kernelbase, "LoadLibraryExA");
+        (PVOID&)TrueLoadLibraryExW = GetProcAddress(kernelbase, "LoadLibraryExW");
+
+
+        bool success = true;
+        success = success && NO_ERROR == DetourAttach(&(PVOID&)TrueLoadLibraryA, DetouredLoadLibraryA);
+        success = success && NO_ERROR == DetourAttach(&(PVOID&)TrueLoadLibraryW, DetouredLoadLibraryW);
+        success = success && NO_ERROR == DetourAttach(&(PVOID&)TrueLoadLibraryExA, DetouredLoadLibraryExA);
+        success = success && NO_ERROR == DetourAttach(&(PVOID&)TrueLoadLibraryExW, DetouredLoadLibraryExW);
+
+        return true;
+    }
+    USER_ERROR("Couldn't load kernel32.dll !!");
+    return false;
 }
 bool DetoursDetachLoadLibraryFunctions()
 {

@@ -22,7 +22,7 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
 
         LOG(" Starting.\n");
 
-        LOG(" DLLs:\n");
+        LOG(" Already loaded DLLs:\n");
         for (HMODULE hModule = NULL; (hModule = DetourEnumerateModules(hModule)) != NULL;)
         {
             CHAR szName[MAX_PATH] = {0};
@@ -35,21 +35,26 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
             DetourUpdateThread(GetCurrentThread());
             if (!DetoursAttachLoadLibraryFunctions())
             {
-                LOG(" Failed to attach LoadLibrary*\n");
+                USER_ERROR(" Failed to attach LoadLibrary*\n");
                 return FALSE;
             }
+            const LONG error = DetourTransactionCommit();
+            if (error == NO_ERROR)
+            {
+                LOG(" Successfully applied detours to LoadLibrary.\n");
 
-            DetoursRegisterDllPatch(L"D2CMP.dll", patchD2CMP, nullptr);
-            DetoursRegisterDllPatch(L"D2Client.dll", patchD2Client, nullptr);
-            DetoursRegisterDllPatch(L"D2Common.dll", patchD2Common, nullptr);
+                DetoursRegisterDllPatch(L"D2CMP.dll", patchD2CMP, nullptr);
+                DetoursRegisterDllPatch(L"D2Client.dll", patchD2Client, nullptr);
+                DetoursRegisterDllPatch(L"D2Common.dll", patchD2Common, nullptr);
 
-            if (LONG error = DetourTransactionCommit() == NO_ERROR)
-                LOG(" Detoured SleepEx().\n");
+                DetoursApplyPatches();
+            }
             else
             {
-                LOG(" Error detouring SleepEx(): {}\n", error);
+                USER_ERROR(" Error while patching with detours: {}\n", error);
                 return FALSE;
             }
+            
         }
     }
     else if (dwReason == DLL_PROCESS_DETACH)

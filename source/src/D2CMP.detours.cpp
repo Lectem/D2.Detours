@@ -41,8 +41,12 @@ static DllOrdinalHookTypeless dllOrdinalHooks[]{
 
 bool patchD2CMP(void*, HMODULE hModule)
 {
-    LOGW(L"Patching D2CMP.dll\n");
-    DetourTransactionBegin();
+    LOG("Patching D2CMP.dll\n");
+    if (NO_ERROR != DetourTransactionBegin())
+    {
+        LOG("Failed to start transaction for D2CMP.dll\n");
+        return false;
+    }
     DetourUpdateThread(GetCurrentThread());
 
     for (auto& dllOrdinalHook : dllOrdinalHooks)
