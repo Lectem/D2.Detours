@@ -8,20 +8,31 @@ enum class PatchAction {
 	Ignore
 };
 
+struct ExtraPatchAction {
+	size_t originalDllOffset;
+	void* patchData;
+	PatchAction action;
+};
+
 extern "C" {
-	typedef int (__cdecl *GetBaseOrdinalType)();
-	typedef int (__cdecl *GetLastOrdinalType)();
+	typedef int(__cdecl* GetIntegerFunctionType)();
 	typedef PatchAction (__cdecl *GetPatchActionType)(int ordinal);
+	typedef ExtraPatchAction(__cdecl* GetExtraPatchActionType)(int extraPatchActionIndex);
 }
 
 struct PatchInformationFunctions
 {
 	// Must be exposed by the patch dll and return the 1st ordinal to patch
-	GetBaseOrdinalType GetBaseOrdinal   = nullptr;
+	GetIntegerFunctionType GetBaseOrdinal   = nullptr;
 	// Must be exposed by the patch dll and return the last ordinal to patch
-	GetLastOrdinalType GetLastOrdinal   = nullptr;
+	GetIntegerFunctionType GetLastOrdinal   = nullptr;
 	// Must be exposed by the patch dll and return the action to take for a given ordinal
 	GetPatchActionType GetPatchAction   = nullptr;
+
+	// Must be exposed by the patch dll if extra patches are needed
+	GetIntegerFunctionType GetExtraPatchActionsCount = nullptr;
+	// Must be exposed by the patch dll and return the action to take for a given extra action index
+	GetExtraPatchActionType GetExtraPatchAction = nullptr;
 };
 
 #ifdef DETOURS_PATCH_PRIVATE
