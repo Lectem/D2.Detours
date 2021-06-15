@@ -39,7 +39,7 @@ static DllOrdinalHookTypeless dllOrdinalHooks[]{
     GetHookOrdinalInfo<10079>(DetouredD2GetTileFlagsType),
 };
 
-bool patchD2CMP(void*, HMODULE hModule)
+bool patchD2CMP(LPCWSTR, void*, HMODULE hModule)
 {
     LOG("Patching D2CMP.dll\n");
     if (NO_ERROR != DetourTransactionBegin())

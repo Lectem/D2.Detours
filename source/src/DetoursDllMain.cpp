@@ -5,8 +5,7 @@
 #include "DetoursHelpers.h"
 
 #include "D2CMP.detours.h"
-#include "D2Client.detours.h"
-#include "D2Common.detours.h"
+#include "DetoursAutoPatchDirectory.h"
 
 #define LOG_PREFIX "(D2.Detours.dll):"
 #include "Log.h"
@@ -43,10 +42,11 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
             {
                 LOG(" Successfully applied detours to LoadLibrary.\n");
 
-                DetoursRegisterDllPatch(L"D2CMP.dll", patchD2CMP, nullptr);
-                DetoursRegisterDllPatch(L"D2Client.dll", patchD2Client, nullptr);
-                DetoursRegisterDllPatch(L"D2Common.dll", patchD2Common, nullptr);
+                D2DetoursRegisterPatchFolder();
 
+                // Example of manual patching with D2CMP
+                // DetoursRegisterDllPatch(L"D2CMP.dll", patchD2CMP, nullptr);
+                
                 DetoursApplyPatches();
             }
             else

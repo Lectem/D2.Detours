@@ -22,7 +22,7 @@
 
 struct DllPatch
 {
-    const wchar_t*          libraryName    = nullptr;
+    std::wstring            libraryName;
     DetoursDllPatchFunction patchFunction  = nullptr;
     void*                   userContext    = nullptr;
     // We need to prevent double patching to avoid infinite recursions
@@ -40,12 +40,12 @@ static void PatchDLL(LPCWSTR lpLibFileName, HMODULE hModule)
         PathStripPathW(fileName);
         for (DllPatch& patch : dllPatches)
         {
-            if (!patch.alreadyPatched && 0 == _wcsicmp(fileName, patch.libraryName))
+            if (!patch.alreadyPatched && 0 == _wcsicmp(fileName, patch.libraryName.c_str()))
             {
                 // Do this to avoid recursion, as GetProcAdress can call LoadLibrary
                 patch.alreadyPatched = true;
 
-                if (!patch.patchFunction(patch.userContext, hModule))
+                if (!patch.patchFunction(fileName, patch.userContext, hModule))
                     LOGW(L"Failed to patch {}\n", patch.libraryName);
             }
         }

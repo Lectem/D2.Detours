@@ -4,12 +4,11 @@ set(D2_detours_SOURCES
     src/DetoursDllMain.cpp
     src/DetoursHelpers.cpp
     src/DetoursPatch.cpp
+    src/DetoursAutoPatchDirectory.cpp
     # .def file for the dll exports
     src/D2.Detours.def
     # The patches
     src/D2CMP.detours.cpp
-    src/D2Client.detours.cpp
-    src/D2Common.detours.cpp
 )
 
 set(D2_detours_HEADERS
@@ -17,8 +16,6 @@ set(D2_detours_HEADERS
     include/DetoursHelpers.h
     include/DetoursPatch.h
     include/D2CMP.detours.h
-    include/D2Client.detours.h
-    include/D2Common.detours.h
 )
 
 add_library(D2.Detours 
