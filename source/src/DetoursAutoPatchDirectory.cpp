@@ -25,8 +25,11 @@ bool patchDllWithEmbeddedPatches(LPCWSTR lpLibFileName, void*, HMODULE hModule)
 
     wchar_t* finalPatchPath = nullptr;
     bool patchSucceeded = false;
+    // We need to keep the addresses that are given to DetourAttach alive until the transaction finishes,
+    // so we store them in a temporary vector
+    std::vector<PVOID> keepAliveOrdinalDetoursAddresses;
     if (S_OK == PathAllocCombine(patchFolder, lpLibFileName, PATHCCH_ALLOW_LONG_PATHS, &finalPatchPath))
-        patchSucceeded = DetoursPatchModule(hModule, finalPatchPath);
+        patchSucceeded = DetoursPatchModule(hModule, finalPatchPath, keepAliveOrdinalDetoursAddresses);
 
     LocalFree(finalPatchPath);
 

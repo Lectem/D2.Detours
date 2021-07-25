@@ -50,7 +50,7 @@ struct PatchHistory {
 };
 
 // Returns false if patching failed
-bool ApplyPatchAction(PatchHistory& patchHistory, PVOID originalOrdinalAddress, PVOID patchOrdinalAddress, PatchAction patchAction, int ordinal)
+bool ApplyPatchAction(PatchHistory& patchHistory, PVOID originalOrdinalAddress, PVOID patchOrdinalAddress, PatchAction patchAction, int ordinal, PVOID* realPatchedFunction = nullptr)
 {
     if (patchAction == PatchAction::Ignore)
     {
@@ -78,10 +78,14 @@ bool ApplyPatchAction(PatchHistory& patchHistory, PVOID originalOrdinalAddress, 
         switch (patchAction)
         {
         case PatchAction::FunctionReplaceOriginalByPatch:
-            err = DetourAttach(&originalOrdinalAddress, patchOrdinalAddress);
+            if (realPatchedFunction)
+                *realPatchedFunction = originalOrdinalAddress;
+            err = DetourAttach(realPatchedFunction  ? realPatchedFunction  : &originalOrdinalAddress, patchOrdinalAddress);
             break;
         case PatchAction::FunctionReplacePatchByOriginal:
-            err = DetourAttach(&patchOrdinalAddress, originalOrdinalAddress);
+            if (realPatchedFunction)
+                *realPatchedFunction = patchOrdinalAddress;
+            err = DetourAttach(realPatchedFunction ? realPatchedFunction : &patchOrdinalAddress, originalOrdinalAddress);
             break;
         case PatchAction::PointerReplaceOriginalByPatch:
             *(void**)originalOrdinalAddress = *(void**)patchOrdinalAddress;
@@ -105,7 +109,7 @@ bool ApplyPatchAction(PatchHistory& patchHistory, PVOID originalOrdinalAddress, 
 }
 
 
-bool DetoursPatchModule(HMODULE hOriginalModule, const wchar_t* patchDllName)
+bool DetoursPatchModule(HMODULE hOriginalModule, const wchar_t* patchDllName, std::vector<PVOID>& ordinalDetouredAddresses)
 {
     if (const HMODULE hModulePatch = TrueLoadLibraryW(patchDllName))
     {
@@ -117,14 +121,15 @@ bool DetoursPatchModule(HMODULE hOriginalModule, const wchar_t* patchDllName)
         }
         
         PatchHistory patchHistory;
-
+        
+        ordinalDetouredAddresses.resize(patch.GetLastOrdinal() - patch.GetBaseOrdinal() + 1);
         for (int ordinal = patch.GetBaseOrdinal(); ordinal <= patch.GetLastOrdinal(); ordinal++)
         {
             const PatchAction patchAction = patch.GetPatchAction(ordinal);
 
             PVOID originalOrdinalAddress = GetProcAddress(hOriginalModule, (LPCSTR)ordinal);
             PVOID patchOrdinalAddress = GetProcAddress(hModulePatch, (LPCSTR)ordinal);
-            if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, patchOrdinalAddress, patchAction, ordinal))
+            if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, patchOrdinalAddress, patchAction, ordinal, &ordinalDetouredAddresses[ordinal - patch.GetBaseOrdinal()]))
             {
                 LOGW(L"Stop patching...\n");
                 return false;
@@ -134,9 +139,9 @@ bool DetoursPatchModule(HMODULE hOriginalModule, const wchar_t* patchDllName)
         const int nbExtraPatchActions = patch.GetExtraPatchActionsCount ? patch.GetExtraPatchActionsCount() : 0;
         for (int extraPatchActionIndex = 0; extraPatchActionIndex < nbExtraPatchActions; extraPatchActionIndex++)
         {
-            const ExtraPatchAction extraPatchAction = patch.GetExtraPatchAction(extraPatchActionIndex);
-            PVOID originalOrdinalAddress = PVOID(uintptr_t(hOriginalModule) + extraPatchAction.originalDllOffset);
-            if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, extraPatchAction.patchData, extraPatchAction.action, -1))
+            ExtraPatchAction* extraPatchAction = patch.GetExtraPatchAction(extraPatchActionIndex);
+            PVOID originalOrdinalAddress = PVOID(uintptr_t(hOriginalModule) + extraPatchAction->originalDllOffset);
+            if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, extraPatchAction->patchData, extraPatchAction->action, -1, &extraPatchAction->detouredPatchedFunction))
             {
                 LOGW(L"Stop patching...\n");
                 return false;
