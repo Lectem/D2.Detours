@@ -47,6 +47,13 @@ void D2DetoursRegisterPatchFolder()
         exit(1);
     }
 
+    // Set the patch folder as the DLL directory.
+    // The objective is to allow for 3rd party DLLs to be placed in the same directory.
+    // This is fine because per the documentation https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setdlldirectorya
+    // the working directory still has priority over the DLL directory. This means the game .DLLs will still be loaded first.
+    // If this ever becomes an issue for whatever reason, we should change the names of the patch .DLLs using a prefix, suffix, or another extension.
+    SetDllDirectoryW(patchFolder);
+
     auto searchPath = fmt::format(L"{}\\*.dll", patchFolder);
 
     WIN32_FIND_DATAW findData;
