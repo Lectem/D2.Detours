@@ -141,7 +141,9 @@ bool DetoursPatchModule(HMODULE hOriginalModule, const wchar_t* patchDllName, st
         {
             ExtraPatchAction* extraPatchAction = patch.GetExtraPatchAction(extraPatchActionIndex);
             PVOID originalOrdinalAddress = PVOID(uintptr_t(hOriginalModule) + extraPatchAction->originalDllOffset);
-            if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, extraPatchAction->patchData, extraPatchAction->action, -1, &extraPatchAction->detouredPatchedFunction))
+            // If an adress if given, then the user wants us to store the real function address at the provided pointer value.
+            void** realPatchedFunctionStorage = extraPatchAction->detouredPatchedFunction == nullptr ? &extraPatchAction->detouredPatchedFunction : (void**)extraPatchAction->detouredPatchedFunction;
+            if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, extraPatchAction->patchData, extraPatchAction->action, -1, realPatchedFunctionStorage))
             {
                 LOGW(L"Stop patching...\n");
                 return false;
