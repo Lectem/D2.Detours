@@ -28,10 +28,16 @@ bool patchDllWithEmbeddedPatches(LPCWSTR lpLibFileName, void*, HMODULE hModule)
     // We need to keep the addresses that are given to DetourAttach alive until the transaction finishes,
     // so we store them in a temporary vector
     std::vector<PVOID> keepAliveOrdinalDetoursAddresses;
-    if (S_OK == PathAllocCombine(patchFolder, lpLibFileName, PATHCCH_ALLOW_LONG_PATHS, &finalPatchPath))
+    wchar_t fileNameWithPatchPrefix[MAX_PATH];
+    if (nullptr != lstrcpynW(fileNameWithPatchPrefix, lpLibFileName, _countof(fileNameWithPatchPrefix))
+        //If we want to make sure there are no doubts about what .dll file is loaded (original vs patch) we should just rename the patches.
+        //&& S_OK == PathCchRenameExtension(fileNameWithPatchPrefix, _countof(fileNameWithPatchPrefix), L".patch")
+        && S_OK == PathAllocCombine(patchFolder, fileNameWithPatchPrefix, PATHCCH_ALLOW_LONG_PATHS, &finalPatchPath))
+    {
         patchSucceeded = DetoursPatchModule(hModule, finalPatchPath, keepAliveOrdinalDetoursAddresses);
-
-    LocalFree(finalPatchPath);
+        
+        LocalFree(finalPatchPath);
+    }
 
     if (NO_ERROR != DetourTransactionCommit())
         return false;
