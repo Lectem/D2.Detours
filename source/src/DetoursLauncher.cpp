@@ -83,7 +83,7 @@ static bool IsFile(const wchar_t* szPath)
 
 static std::wstring GetD2ExecutablePath(int argc, wchar_t* argv[], bool& overrideChildCurrentDir)
 {
-    if (argc >= 2)
+    if (argc >= 2 && 0 != wcscmp(argv[1], L"--"))
     {
         if (!IsFile(argv[1]))
         {
@@ -122,8 +122,33 @@ int wmain(int argc, wchar_t* argv[])
         return 1;
     }
 
-    const wchar_t* appName = d2ExecPath.c_str();
-    wchar_t* commandLine = nullptr;
+    std::wstring   commandLineWStr;
+    for (int i = 1; i < argc; i++)
+    {
+        if (wcscmp(argv[i], L"--") == 0)
+        {
+            commandLineWStr = L'"' + d2ExecPath + L'"';
+            for (int originalCmdArgI = i + 1; originalCmdArgI < argc; originalCmdArgI++)
+            {
+                commandLineWStr += L" ";
+                // TODO: escape?
+                commandLineWStr += argv[originalCmdArgI];
+            }
+            break;
+        }
+    }
+    
+    const wchar_t* appName              = d2ExecPath.c_str();
+    wchar_t*       D2ProcessCommandLine = nullptr;
+
+    // Create process needs a non-const buffer, as it may modify the command line inplace
+    wchar_t commandLineBuffer[PATHCCH_MAX_CCH];
+    if (!commandLineWStr.empty()) 
+    { 
+        wcsncpy(commandLineBuffer, commandLineWStr.c_str(), PATHCCH_MAX_CCH - 1); 
+        commandLineBuffer[PATHCCH_MAX_CCH - 1] = 0;
+        D2ProcessCommandLine = commandLineBuffer;
+    }
 
     const size_t maxPathLen = 2048;
     wchar_t currentModuleFilePath[maxPathLen] = { 0 };
@@ -154,7 +179,7 @@ int wmain(int argc, wchar_t* argv[])
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
     const DWORD dwFlags = CREATE_DEFAULT_ERROR_MODE | CREATE_SUSPENDED;
-    if (DetourCreateProcessWithDllExW(appName, commandLine,
+    if (DetourCreateProcessWithDllExW(appName, D2ProcessCommandLine,
         NULL, NULL, 
         TRUE, dwFlags, 
         NULL, overrideChildCurrentDir ? static_cast<const wchar_t*>(directoryPathPtr.get()) : nullptr,

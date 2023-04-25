@@ -28,6 +28,13 @@ For example if you are using D2SE mod manager:
 D2.DetoursLauncher.exe D2SE.exe
 ```
 
+You may pass arguments to the game by adding them after a `--` parameter.
+For example:
+
+```sh
+D2.DetoursLauncher.exe -- -skiptobnet -w
+```
+
 Note that it will spawn D2SE.exe as a subprocess, so you might be interested in the following Visual Studio extension [Microsoft Child Process Debugging Power Tool](https://marketplace.visualstudio.com/items?itemName=vsdbgplat.MicrosoftChildProcessDebuggingPowerTool). Then go to `Debug > Other debug targets > Child process debugging settings`, enable & save.
 
 ## Requirements :
