@@ -14,7 +14,7 @@ wchar_t envPathBuffer[maxEnvPathLen];
 
 const wchar_t* patchFolder = (0 != GetEnvironmentVariableW(L"DIABLO2_PATCH", envPathBuffer, maxEnvPathLen)) ? envPathBuffer : LR"(.\patch\)";
 
-bool patchDllWithEmbeddedPatches(LPCWSTR lpLibFileName, void*, HMODULE hModule)
+bool patchDllWithEmbeddedPatches(LPCWSTR lpLibFileName, LPCWSTR patchLibraryPath, void*, HMODULE hModule)
 {
     LOGW(L"Patching {}\n", lpLibFileName);
 
@@ -23,21 +23,11 @@ bool patchDllWithEmbeddedPatches(LPCWSTR lpLibFileName, void*, HMODULE hModule)
 
     DetourUpdateThread(GetCurrentThread());
 
-    wchar_t* finalPatchPath = nullptr;
     bool patchSucceeded = false;
     // We need to keep the addresses that are given to DetourAttach alive until the transaction finishes,
     // so we store them in a temporary vector
     std::vector<PVOID> keepAliveOrdinalDetoursAddresses;
-    wchar_t fileNameWithPatchPrefix[MAX_PATH];
-    if (nullptr != lstrcpynW(fileNameWithPatchPrefix, lpLibFileName, _countof(fileNameWithPatchPrefix))
-        //If we want to make sure there are no doubts about what .dll file is loaded (original vs patch) we should just rename the patches.
-        //&& S_OK == PathCchRenameExtension(fileNameWithPatchPrefix, _countof(fileNameWithPatchPrefix), L".patch")
-        && S_OK == PathAllocCombine(patchFolder, fileNameWithPatchPrefix, PATHCCH_ALLOW_LONG_PATHS, &finalPatchPath))
-    {
-        patchSucceeded = DetoursPatchModule(hModule, finalPatchPath, keepAliveOrdinalDetoursAddresses);
-        
-        LocalFree(finalPatchPath);
-    }
+    patchSucceeded = DetoursPatchModule(hModule, patchLibraryPath, keepAliveOrdinalDetoursAddresses);
 
     if (NO_ERROR != DetourTransactionCommit())
         return false;
@@ -71,7 +61,7 @@ void D2DetoursRegisterPatchFolder()
     }
     do {
         LOGW(L"Registering patch for {}.\n", findData.cFileName);
-        DetoursRegisterDllPatch(findData.cFileName, patchDllWithEmbeddedPatches, nullptr);
+        DetoursRegisterDllPatch(findData.cFileName, patchFolder, patchDllWithEmbeddedPatches, nullptr);
     } while (FindNextFileW(searchHandle, &findData));
 
     FindClose(searchHandle);

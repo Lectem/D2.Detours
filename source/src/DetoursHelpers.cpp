@@ -1,4 +1,5 @@
 #include "DetoursHelpers.h"
+#include "DetoursPatch.h"
 
 #include <Windows.h>
 #include <detours.h>
@@ -23,6 +24,7 @@
 struct DllPatch
 {
     std::wstring            libraryName;
+    std::wstring            patchLibraryPath;
     DetoursDllPatchFunction patchFunction  = nullptr;
     void*                   userContext    = nullptr;
     // We need to prevent double patching to avoid infinite recursions
@@ -45,15 +47,46 @@ static void PatchDLL(LPCWSTR lpLibFileName, HMODULE hModule)
                 // Do this to avoid recursion, as GetProcAdress can call LoadLibrary
                 patch.alreadyPatched = true;
 
-                if (!patch.patchFunction(fileName, patch.userContext, hModule))
+                if (!patch.patchFunction(fileName, patch.patchLibraryPath.c_str(), patch.userContext, hModule))
                     LOGW(L"Failed to patch {}\n", patch.libraryName);
             }
         }
     }
 }
-void DetoursRegisterDllPatch(const wchar_t* dllName, DetoursDllPatchFunction patchFunction, void* userContext)
+void DetoursRegisterDllPatch(const wchar_t* dllName, const wchar_t* patchFolder, DetoursDllPatchFunction patchFunction,
+                             void* userContext)
 {
-    dllPatches.push_back(DllPatch{ dllName, patchFunction, userContext });
+    // We need to make sure we load the patch .dll, not the one we want to patch.
+    const std::wstring fullDllPath = fmt::format(L"{}\\{}", patchFolder, dllName);
+    // To support patching another .dll without specifying a naming convention, we use resource (.rc) files.
+    // This is because we do not have a way to load a .dll without ensuring we don't load .dlls that should not be loaded yet.
+    // For example we need to wait for D2Common.dll to be loaded before loading a .dll that patches D2Game and may have D2Common in its import table.
+    // 
+    // So we actually need to know the .dll we want to patch so that we don't load the patch too early...
+    // We can only rely on either another file (which is not very practical), reading data from the .dll itself, or embedding this in the patch file name.
+    // Most of those solutions are not very practical, and since it is possible to load a .dll without loading its dependencies 
+    // nor calling its DllMain (LOAD_LIBRARY_AS_DATAFILE) but still be able to read its resources, that's what we use...
+    // We then unload the patch .dll if it wasn't already loaded, so that the next LoadLibrary actually loads it correctly.
+    // 
+    // You will need to create a .rc file with the following content:
+    // NameOfModuleToPatch 256 { L"TheDLLIWantToPatch.dll\0" }
+    if (HMODULE patchDLL = TrueLoadLibraryExW(fullDllPath.c_str(), NULL, LOAD_LIBRARY_AS_DATAFILE))
+    {
+        if (HRSRC NameOfModuleToPatch = FindResource(patchDLL, TEXT("NameOfModuleToPatch"), MAKEINTRESOURCE(256)))
+        {
+            HGLOBAL res = nullptr;
+            const wchar_t* dllToPatch = nullptr;
+            if ((res = LoadResource(patchDLL, NameOfModuleToPatch)) && (dllToPatch = (const wchar_t*)LockResource(res)))
+            {
+                LOGW(L"{} will be used to patch {}\n", dllName, dllToPatch);
+                dllPatches.push_back(DllPatch{dllToPatch, fullDllPath, patchFunction, userContext});
+                FreeLibrary(patchDLL);
+                return;
+            }
+        }
+        FreeLibrary(patchDLL);
+    }
+    dllPatches.push_back(DllPatch{dllName, fullDllPath, patchFunction, userContext});
 }
 
 void DetoursApplyPatches()

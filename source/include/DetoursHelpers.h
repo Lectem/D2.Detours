@@ -5,10 +5,11 @@
 bool DetoursAttachLoadLibraryFunctions();
 bool DetoursDetachLoadLibraryFunctions();
 
-typedef bool (*DetoursDllPatchFunction)(LPCWSTR lpLibFileName, void* userContext, HMODULE hModule);
+using DetoursDllPatchFunction = bool (*)(LPCWSTR lpLibFileName, LPCWSTR patchLibraryPath, void* userContext, HMODULE hModule);
 
 /// Automatically patch an existing dll or once it is loaded
-void DetoursRegisterDllPatch(const wchar_t* dllName, DetoursDllPatchFunction patchFunction, void* userContext);
+void DetoursRegisterDllPatch(const wchar_t* dllName, const wchar_t* patchFolder, DetoursDllPatchFunction patchFunction,
+                             void* userContext);
 void DetoursApplyPatches();
 
 /// See GetHookOrdinalInfo
