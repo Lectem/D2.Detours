@@ -45,6 +45,6 @@ struct PatchInformationFunctions
  * Patch hOriginalModule using a dll with a given path.
  * Ordinals patching is determined by the patch dll, and it must expose the functions in PatchInformationFunctions.
  */
-bool DetoursPatchModule(HMODULE hOriginalModule, const wchar_t* patchDllNamee, std::vector<PVOID>& ordinalDetouredAddresses);
+bool DetoursPatchModule(HMODULE hOriginalModule, HMODULE hPatchModule, std::vector<PVOID>& ordinalDetouredAddresses);
 #endif
 

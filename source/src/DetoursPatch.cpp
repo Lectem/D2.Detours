@@ -109,51 +109,48 @@ bool ApplyPatchAction(PatchHistory& patchHistory, PVOID originalOrdinalAddress, 
 }
 
 
-bool DetoursPatchModule(HMODULE hOriginalModule, const wchar_t* patchDllName, std::vector<PVOID>& ordinalDetouredAddresses)
+bool DetoursPatchModule(HMODULE hOriginalModule, HMODULE hPatchModule, std::vector<PVOID>& ordinalDetouredAddresses)
 {
-    if (const HMODULE hModulePatch = TrueLoadLibraryW(patchDllName))
+    PatchInformationFunctions patch;
+    if (!getPatchInformationFunctions(patch, hPatchModule))
     {
-        PatchInformationFunctions patch;
-        if (!getPatchInformationFunctions(patch, hModulePatch))
+        LOGW(L"Failed to load patch info.\n");
+        return false;
+    }
+
+    PatchHistory patchHistory;
+
+    ordinalDetouredAddresses.resize(patch.GetLastOrdinal() - patch.GetBaseOrdinal() + 1);
+    for (int ordinal = patch.GetBaseOrdinal(); ordinal <= patch.GetLastOrdinal(); ordinal++)
+    {
+        const PatchAction patchAction = patch.GetPatchAction(ordinal);
+
+        PVOID originalOrdinalAddress = GetProcAddress(hOriginalModule, (LPCSTR)ordinal);
+        PVOID patchOrdinalAddress    = GetProcAddress(hPatchModule, (LPCSTR)ordinal);
+        if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, patchOrdinalAddress, patchAction, ordinal,
+                              &ordinalDetouredAddresses[ordinal - patch.GetBaseOrdinal()]))
         {
-            LOGW(L"Failed to load {} patch info.\n", patchDllName);
+            LOGW(L"Stop patching...\n");
             return false;
         }
-        
-        PatchHistory patchHistory;
-        
-        ordinalDetouredAddresses.resize(patch.GetLastOrdinal() - patch.GetBaseOrdinal() + 1);
-        for (int ordinal = patch.GetBaseOrdinal(); ordinal <= patch.GetLastOrdinal(); ordinal++)
-        {
-            const PatchAction patchAction = patch.GetPatchAction(ordinal);
-
-            PVOID originalOrdinalAddress = GetProcAddress(hOriginalModule, (LPCSTR)ordinal);
-            PVOID patchOrdinalAddress = GetProcAddress(hModulePatch, (LPCSTR)ordinal);
-            if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, patchOrdinalAddress, patchAction, ordinal, &ordinalDetouredAddresses[ordinal - patch.GetBaseOrdinal()]))
-            {
-                LOGW(L"Stop patching...\n");
-                return false;
-            }
-        }
-
-        const int nbExtraPatchActions = patch.GetExtraPatchActionsCount ? patch.GetExtraPatchActionsCount() : 0;
-        for (int extraPatchActionIndex = 0; extraPatchActionIndex < nbExtraPatchActions; extraPatchActionIndex++)
-        {
-            ExtraPatchAction* extraPatchAction = patch.GetExtraPatchAction(extraPatchActionIndex);
-            PVOID originalOrdinalAddress = PVOID(uintptr_t(hOriginalModule) + extraPatchAction->originalDllOffset);
-            // If an adress if given, then the user wants us to store the real function address at the provided pointer value.
-            void** realPatchedFunctionStorage = extraPatchAction->detouredPatchedFunction == nullptr ? &extraPatchAction->detouredPatchedFunction : (void**)extraPatchAction->detouredPatchedFunction;
-            if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, extraPatchAction->patchData, extraPatchAction->action, -1, realPatchedFunctionStorage))
-            {
-                LOGW(L"Stop patching...\n");
-                return false;
-            }
-        }
     }
-    else
+
+    const int nbExtraPatchActions = patch.GetExtraPatchActionsCount ? patch.GetExtraPatchActionsCount() : 0;
+    for (int extraPatchActionIndex = 0; extraPatchActionIndex < nbExtraPatchActions; extraPatchActionIndex++)
     {
-        LOGW(L"Failed to load {}\n", patchDllName);
-        return false;
+        ExtraPatchAction* extraPatchAction = patch.GetExtraPatchAction(extraPatchActionIndex);
+        PVOID originalOrdinalAddress       = PVOID(uintptr_t(hOriginalModule) + extraPatchAction->originalDllOffset);
+        // If an adress if given, then the user wants us to store the real function address at the provided pointer
+        // value.
+        void** realPatchedFunctionStorage = extraPatchAction->detouredPatchedFunction == nullptr
+                                                ? &extraPatchAction->detouredPatchedFunction
+                                                : (void**)extraPatchAction->detouredPatchedFunction;
+        if (!ApplyPatchAction(patchHistory, originalOrdinalAddress, extraPatchAction->patchData,
+                              extraPatchAction->action, -1, realPatchedFunctionStorage))
+        {
+            LOGW(L"Stop patching...\n");
+            return false;
+        }
     }
     return true;
 }

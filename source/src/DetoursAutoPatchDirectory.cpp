@@ -16,23 +16,28 @@ const wchar_t* patchFolder = (0 != GetEnvironmentVariableW(L"DIABLO2_PATCH", env
 
 bool patchDllWithEmbeddedPatches(LPCWSTR lpLibFileName, LPCWSTR patchLibraryPath, void*, HMODULE hModule)
 {
-    LOGW(L"Patching {}\n", lpLibFileName);
+    if (const HMODULE hModulePatch = TrueLoadLibraryW(patchLibraryPath))
+    {
+        LOGW(L"Patching {}\n", lpLibFileName);
 
-    if (DetourTransactionBegin() != NO_ERROR)
+        if (DetourTransactionBegin() != NO_ERROR) return false;
+
+        DetourUpdateThread(GetCurrentThread());
+
+        bool patchSucceeded = false;
+        // We need to keep the addresses that are given to DetourAttach alive until the transaction finishes,
+        // so we store them in a temporary vector
+        std::vector<PVOID> keepAliveOrdinalDetoursAddresses;
+        patchSucceeded = DetoursPatchModule(hModule, hModulePatch, keepAliveOrdinalDetoursAddresses);
+
+        if (NO_ERROR != DetourTransactionCommit()) return false;
+        return patchSucceeded;
+    }
+    else
+    {
+        LOGW(L"Failed to load {}\n", patchLibraryPath);
         return false;
-
-    DetourUpdateThread(GetCurrentThread());
-
-    bool patchSucceeded = false;
-    // We need to keep the addresses that are given to DetourAttach alive until the transaction finishes,
-    // so we store them in a temporary vector
-    std::vector<PVOID> keepAliveOrdinalDetoursAddresses;
-    patchSucceeded = DetoursPatchModule(hModule, patchLibraryPath, keepAliveOrdinalDetoursAddresses);
-
-    if (NO_ERROR != DetourTransactionCommit())
-        return false;
-
-    return patchSucceeded;
+    }
 }
 
 void D2DetoursRegisterPatchFolder()
