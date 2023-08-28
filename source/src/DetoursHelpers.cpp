@@ -181,7 +181,7 @@ bool DetoursAttachLoadLibraryFunctions()
         success = success && NO_ERROR == DetourAttach(&(PVOID&)TrueLoadLibraryExA, DetouredLoadLibraryExA);
         success = success && NO_ERROR == DetourAttach(&(PVOID&)TrueLoadLibraryExW, DetouredLoadLibraryExW);
 
-        return true;
+        return success;
     }
     USER_ERROR("Couldn't load kernel32.dll !!");
     return false;
