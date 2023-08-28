@@ -44,7 +44,11 @@ static std::wstring FindD2Executable()
     const size_t bufferNbChars = 1 << 10;
     wchar_t buffer[bufferNbChars];
 
-    const wchar_t* Diablo2ExeNames[] = { L"D2SE.exe", L"Game.exe", L"Diablo II.exe" };
+    const wchar_t* Diablo2ExeNames[] = { 
+        L"D2SE.exe",
+        L"Game.exe", // Order is important. We need to start using Game.exe or our injection will only be done on the bootstrapping process
+        L"Diablo II.exe"
+    };
     DWORD stringLength = 0;
 
     // First look in current dir and system PATH
