@@ -28,7 +28,7 @@ bool patchDllWithEmbeddedPatches(LPCWSTR lpLibFileName, LPCWSTR patchLibraryPath
         // We need to keep the addresses that are given to DetourAttach alive until the transaction finishes,
         // so we store them in a temporary vector
         std::vector<PVOID> keepAliveOrdinalDetoursAddresses;
-        patchSucceeded = DetoursPatchModule(hModule, hModulePatch, keepAliveOrdinalDetoursAddresses);
+        patchSucceeded = DetoursPatchModule(lpLibFileName, hModule, hModulePatch, keepAliveOrdinalDetoursAddresses);
 
         if (NO_ERROR != DetourTransactionCommit()) return false;
         return patchSucceeded;
