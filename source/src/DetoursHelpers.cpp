@@ -53,6 +53,17 @@ static void PatchDLL(LPCWSTR lpLibFileName, HMODULE hModule)
         }
     }
 }
+
+
+const HMODULE GetDetoursDllModule()
+{
+    HMODULE hModule = NULL;
+    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                       (LPCTSTR)GetDetoursDllModule, &hModule);
+    return hModule;
+}
+const HMODULE gDetoursDllModule = GetDetoursDllModule();
+
 void DetoursRegisterDllPatch(const wchar_t* dllName, const wchar_t* patchFolder, DetoursDllPatchFunction patchFunction,
                              void* userContext)
 {
@@ -72,7 +83,16 @@ void DetoursRegisterDllPatch(const wchar_t* dllName, const wchar_t* patchFolder,
     // NameOfModuleToPatch 256 { L"TheDLLIWantToPatch.dll\0" }
     if (HMODULE patchDLL = TrueLoadLibraryExW(fullDllPath.c_str(), NULL, LOAD_LIBRARY_AS_DATAFILE))
     {
-        if (HRSRC NameOfModuleToPatch = FindResource(patchDLL, TEXT("NameOfModuleToPatch"), MAKEINTRESOURCE(256)))
+		// Ignore if self.
+        if (gDetoursDllModule == patchDLL)
+        {
+            FreeLibrary(patchDLL);
+            return;
+		}
+
+        HRSRC NameOfModulesToPatch = FindResourceA(patchDLL, TEXT("NameOfModuleToPatch"), resourceType); // Backward compat
+
+        if (NameOfModulesToPatch)
         {
             HGLOBAL res = nullptr;
             const wchar_t* dllToPatch = nullptr;
