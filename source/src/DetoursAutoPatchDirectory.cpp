@@ -18,7 +18,7 @@ bool patchDllWithEmbeddedPatches(LPCWSTR lpLibFileName, LPCWSTR patchLibraryPath
 {
     if (const HMODULE hModulePatch = TrueLoadLibraryW(patchLibraryPath))
     {
-        LOGW(L"Patching {}\n", lpLibFileName);
+        LOGW(L"Patching {} using {}\n", lpLibFileName, patchLibraryPath);
 
         if (DetourTransactionBegin() != NO_ERROR) return false;
 

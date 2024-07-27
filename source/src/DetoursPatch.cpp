@@ -197,6 +197,7 @@ bool DetoursPatchModule(LPCWSTR lpLibFileName, HMODULE hOriginalModule, HMODULE 
 
         if (uint32_t err = DllPreLoadHook(&ctx, lpLibFileName))
         {
+            LOGW(L"DllPreLoadHook returned{}.\n", err);
             // TODO: Handle error?
             return false;
         }
@@ -218,6 +219,11 @@ bool DetoursPatchModule(LPCWSTR lpLibFileName, HMODULE hOriginalModule, HMODULE 
         for (int ordinal = patch.GetBaseOrdinal(); ordinal <= patch.GetLastOrdinal(); ordinal++)
         {
             const PatchAction patchAction = patch.GetPatchAction(ordinal);
+            if (patchAction == PatchAction::Ignore)
+            {
+                LOGW(L"Ordinal {} ignored.\n", ordinal);
+                continue;
+            }
 
             PVOID originalOrdinalAddress = GetProcAddress(hOriginalModule, (LPCSTR)ordinal);
             PVOID patchOrdinalAddress    = GetProcAddress(hPatchModule, (LPCSTR)ordinal);
@@ -242,6 +248,7 @@ bool DetoursPatchModule(LPCWSTR lpLibFileName, HMODULE hOriginalModule, HMODULE 
     for (int extraPatchActionIndex = 0; extraPatchActionIndex < nbExtraPatchActions; extraPatchActionIndex++)
     {
         ExtraPatchAction* extraPatchAction = patch.GetExtraPatchAction(extraPatchActionIndex);
+
         PVOID             originalAddress  = PVOID(uintptr_t(hOriginalModule) + extraPatchAction->originalDllOffset);
         // If an adress if given, then the user wants us to store the real function address at the provided pointer
         // value.
@@ -250,6 +257,11 @@ bool DetoursPatchModule(LPCWSTR lpLibFileName, HMODULE hOriginalModule, HMODULE 
                 ? &extraPatchAction->detouredPatchedFunctionPointer
                 : (void**)extraPatchAction->detouredPatchedFunctionPointerStorageAddress;
 
+        if (extraPatchAction->action == PatchAction::Ignore)
+        {
+            LOGW(L"Ignoring patch offset {} patchAddr {}) \n", extraPatchAction->originalDllOffset, extraPatchAction->patchData);
+            continue;
+        }
         LOGW(L"Patching origAddr {} {} patchAddr {}) \n", originalAddress,
              extraPatchAction->action == PatchAction::FunctionReplaceOriginalByPatch ||
                      extraPatchAction->action == PatchAction::PointerReplaceOriginalByPatch
