@@ -206,7 +206,7 @@ bool DetoursPatchModule(LPCWSTR lpLibFileName, HMODULE hOriginalModule, HMODULE 
     PatchInformationFunctions patch;
     if (!getPatchInformationFunctions(lpLibFileName, patch, hPatchModule))
     {
-        if (DllPreLoadHook)
+        if (!DllPreLoadHook)
         {
             LOGW(L"Failed to load patch info.\n");
             return false;
