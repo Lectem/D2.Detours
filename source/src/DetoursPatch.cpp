@@ -49,9 +49,9 @@ struct PatchHistory
         auto inserted = patchedAddresses.insert({addressBeingPatched, patchAddress});
         if (!inserted.second)
         {
-            LOGW(L"{}Trying to patch address {} which was already patched by {}, skipping patch. This can lead to unwanted behavior "
+            LOGW(L"{}Trying to patch address {} using {} which was already patched by {}, skipping patch. This can lead to unwanted behavior "
                  L"(multiple functions could have been merged in original dll).\n",
-                 logPrefix, addressBeingPatched, inserted.first->second);
+                 logPrefix, addressBeingPatched, patchAddress, inserted.first->second);
             return PatchAction_AlreadyPatched;
         }
         auto it = patchedAddresses.find(patchAddress);
@@ -228,7 +228,7 @@ bool DetoursPatchModule(LPCWSTR lpLibFileName, HMODULE hOriginalModule, HMODULE 
             PVOID originalOrdinalAddress = GetProcAddress(hOriginalModule, (LPCSTR)ordinal);
             PVOID patchOrdinalAddress    = GetProcAddress(hPatchModule, (LPCSTR)ordinal);
 
-            LOGW(L"Patching oridnal {} (origAddr {} {} patchAddr {}) \n", ordinal, originalOrdinalAddress,
+            LOGW(L"Patching ordinal {} (origAddr {} {} patchAddr {}) \n", ordinal, originalOrdinalAddress,
                  patchAction == PatchAction::FunctionReplaceOriginalByPatch ||
                          patchAction == PatchAction::PointerReplaceOriginalByPatch
                      ? L"<=="
