@@ -5,6 +5,7 @@
 
 #define LOG_PREFIX "(D2CMP.detours):"
 #include "Log.h"
+#include <assert.h>
 
 struct PL2File;
 static PL2File* __stdcall DetouredCreateD2Palette(BYTE* pPal[256])

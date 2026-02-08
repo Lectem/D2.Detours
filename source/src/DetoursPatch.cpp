@@ -7,6 +7,7 @@
 #define LOG_PREFIX "(D2detours.patch):"
 #include "Log.h"
 #include <unordered_map>
+#include <assert.h>
 
 bool getPatchInformationFunctions(LPCWSTR lpLibFileName, PatchInformationFunctions& functions, HMODULE hModulePatch)
 {
